@@ -1,5 +1,6 @@
 import express from 'express';
 import { createServer as createHttpsServer } from 'https';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { generate as generateCert } from 'selfsigned';
 import { createWsHub } from './ws-hub.js';
 import { healthHandler } from './routes/health.js';
@@ -10,6 +11,27 @@ import {
   deleteSessionHandler,
   updateSessionConfigHandler,
 } from './routes/sessions.js';
+
+// Cache cert to disk so it survives hot-reloads — clients only need to accept it once
+const CERT_CACHE = '/tmp/lsd2-cert.json';
+
+interface CachedPems { private: string; cert: string; }
+
+let pems: CachedPems;
+if (existsSync(CERT_CACHE)) {
+  pems = JSON.parse(readFileSync(CERT_CACHE, 'utf8')) as CachedPems;
+  console.log('Using cached TLS certificate');
+} else {
+  const notAfterDate = new Date();
+  notAfterDate.setFullYear(notAfterDate.getFullYear() + 1);
+  const generated = await generateCert(
+    [{ name: 'commonName', value: 'lsd2.local' }],
+    { keySize: 2048, algorithm: 'sha256', notAfterDate },
+  );
+  pems = { private: generated.private, cert: generated.cert };
+  writeFileSync(CERT_CACHE, JSON.stringify(pems));
+  console.log('Generated new TLS certificate (cached to', CERT_CACHE, ')');
+}
 
 const app = express();
 app.use(express.json());
@@ -29,13 +51,6 @@ app.post('/sessions', createSessionHandler);
 app.get('/sessions/:id', getSessionHandler);
 app.delete('/sessions/:id', deleteSessionHandler);
 app.put('/sessions/:id/config', updateSessionConfigHandler);
-
-const notAfterDate = new Date();
-notAfterDate.setFullYear(notAfterDate.getFullYear() + 1);
-const pems = await generateCert(
-  [{ name: 'commonName', value: 'lsd2.local' }],
-  { keySize: 2048, algorithm: 'sha256', notAfterDate },
-);
 
 const server = createHttpsServer({ key: pems.private, cert: pems.cert }, app);
 createWsHub(server);

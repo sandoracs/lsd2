@@ -49,10 +49,16 @@ export function initUI(): void {
 
       const sender = createWsSender(wsUrl);
       activeSender = sender;
+      let reconnectingTimer: ReturnType<typeof setTimeout> | null = null;
       sender.onStatusChange = (status) => {
         if (!active && status !== 'connected') return; // don't overwrite an error
-        if (status === 'connected') setStatus('● Live', '#1a6b1a');
-        else if (status === 'disconnected') setStatus('Reconnecting…', '#7a4400');
+        if (status === 'connected') {
+          if (reconnectingTimer) { clearTimeout(reconnectingTimer); reconnectingTimer = null; }
+          setStatus('● Live', '#1a6b1a');
+        } else if (status === 'disconnected') {
+          // Delay label so brief reconnects don't flash "Reconnecting…"
+          reconnectingTimer = setTimeout(() => setStatus('Reconnecting…', '#7a4400'), 1000);
+        }
       };
 
       stopCapture = await startCapture({
