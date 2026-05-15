@@ -4,8 +4,12 @@ import type { ColorFrame } from '@lsd2/protocol';
 import { createWsReceiver } from './ws-receiver.js';
 import { AuroraScene } from './aurora.js';
 import { OrbitalScene } from './orbital.js';
+import { ConstellationScene } from './constellation.js';
+import { RippleScene } from './ripple.js';
 import { HandTracker } from './hand-tracker.js';
 import { initUi, setStatus, showVrButton, type VrConfig } from './ui.js';
+
+type Metaphor = VrConfig['metaphor'];
 
 // ── Three.js setup ─────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -35,9 +39,11 @@ window.addEventListener('resize', () => {
 // ── State ──────────────────────────────────────────────────────────────────
 let aurora: AuroraScene | null = null;
 let orbital: OrbitalScene | null = null;
+let constellation: ConstellationScene | null = null;
+let ripple: RippleScene | null = null;
 let frozen = false;
 let lastFrame: ColorFrame | null = null;
-let currentMetaphor: 'aurora' | 'orbital' = 'aurora';
+let currentMetaphor: Metaphor = 'aurora';
 let decayMs = 3000;
 
 function toggleFreeze(): void {
@@ -45,20 +51,34 @@ function toggleFreeze(): void {
   scene.background = new THREE.Color(frozen ? 0x0a0202 : 0x050510);
 }
 
-function switchMetaphor(metaphor: 'aurora' | 'orbital'): void {
-  if (metaphor === currentMetaphor) return;
-  aurora?.dispose();
-  orbital?.dispose();
-  aurora = null;
-  orbital = null;
+function disposeAll(): void {
+  aurora?.dispose(); aurora = null;
+  orbital?.dispose(); orbital = null;
+  constellation?.dispose(); constellation = null;
+  ripple?.dispose(); ripple = null;
+}
+
+function spawnMetaphor(metaphor: Metaphor): void {
   currentMetaphor = metaphor;
   if (metaphor === 'aurora') {
     aurora = new AuroraScene(scene);
     aurora.setDecayMs(decayMs);
-  } else {
+  } else if (metaphor === 'orbital') {
     orbital = new OrbitalScene(scene);
     orbital.setDecayMs(decayMs);
+  } else if (metaphor === 'constellation') {
+    constellation = new ConstellationScene(scene);
+    constellation.setDecayMs(decayMs);
+  } else {
+    ripple = new RippleScene(scene);
+    ripple.setDecayMs(decayMs);
   }
+}
+
+function switchMetaphor(metaphor: Metaphor): void {
+  if (metaphor === currentMetaphor) return;
+  disposeAll();
+  spawnMetaphor(metaphor);
 }
 
 // ── Animation loop ─────────────────────────────────────────────────────────
@@ -69,6 +89,8 @@ renderer.setAnimationLoop(() => {
   if (!frozen && lastFrame) {
     aurora?.update(lastFrame);
     orbital?.update(lastFrame, delta);
+    constellation?.update(lastFrame);
+    ripple?.update(lastFrame);
   }
   renderer.render(scene, camera);
 });
@@ -77,20 +99,8 @@ renderer.setAnimationLoop(() => {
 initUi({
   onConnect(config: VrConfig) {
     decayMs = config.decayMs;
-    currentMetaphor = config.metaphor;
-
-    aurora?.dispose();
-    orbital?.dispose();
-    aurora = null;
-    orbital = null;
-
-    if (config.metaphor === 'aurora') {
-      aurora = new AuroraScene(scene);
-      aurora.setDecayMs(decayMs);
-    } else {
-      orbital = new OrbitalScene(scene);
-      orbital.setDecayMs(decayMs);
-    }
+    disposeAll();
+    spawnMetaphor(config.metaphor);
 
     const wsUrl = `${config.serverUrl}/ws?sessionId=${config.sessionId}&role=presenter`;
     setStatus('Connecting…');
@@ -126,9 +136,11 @@ initUi({
     decayMs = ms;
     aurora?.setDecayMs(ms);
     orbital?.setDecayMs(ms);
+    constellation?.setDecayMs(ms);
+    ripple?.setDecayMs(ms);
   },
 
-  onMetaphorChange(metaphor: 'aurora' | 'orbital') {
+  onMetaphorChange(metaphor: Metaphor) {
     switchMetaphor(metaphor);
   },
 });

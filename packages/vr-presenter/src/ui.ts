@@ -1,14 +1,14 @@
 export interface VrConfig {
   serverUrl: string;
   sessionId: string;
-  metaphor: 'aurora' | 'orbital';
+  metaphor: 'aurora' | 'orbital' | 'constellation' | 'ripple';
   decayMs: number;
 }
 
 export interface UiCallbacks {
   onConnect(config: VrConfig): void;
   onDecayChange(ms: number): void;
-  onMetaphorChange(metaphor: 'aurora' | 'orbital'): void;
+  onMetaphorChange(metaphor: VrConfig['metaphor']): void;
 }
 
 export function initUi(callbacks: UiCallbacks): void {
@@ -38,7 +38,7 @@ export function initUi(callbacks: UiCallbacks): void {
   });
 
   metaphorSelect.addEventListener('change', () => {
-    callbacks.onMetaphorChange(metaphorSelect.value as 'aurora' | 'orbital');
+    callbacks.onMetaphorChange(metaphorSelect.value as VrConfig['metaphor']);
   });
 
   form.addEventListener('submit', (e) => {
@@ -54,7 +54,7 @@ export function initUi(callbacks: UiCallbacks): void {
     const config: VrConfig = {
       serverUrl,
       sessionId: sessionInput.value.trim() || 'default',
-      metaphor: metaphorSelect.value as 'aurora' | 'orbital',
+      metaphor: metaphorSelect.value as VrConfig['metaphor'],
       decayMs: Number(decaySlider.value),
     };
     callbacks.onConnect(config);
