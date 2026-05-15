@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LSD2 VR Presenter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #05051a;
+      color: #e0e0ff;
+      font-family: system-ui, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas { position: fixed; inset: 0; display: none; }
+
+    #config-panel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 2rem 2.4rem;
+      width: min(420px, 96vw);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; letter-spacing: 0.03em; }
+
+    .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.1rem; }
+
+    label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9090cc; }
+
+    input, select {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #e0e0ff;
+      font-size: 0.95rem;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      width: 100%;
+    }
+    input:focus, select:focus { border-color: rgba(140,140,255,0.6); }
+
+    .slider-row { display: flex; align-items: center; gap: 0.8rem; }
+    input[type=range] { flex: 1; accent-color: #7070ff; }
+    #decay-label { min-width: 4.5rem; text-align: right; font-size: 0.88rem; color: #b0b0e0; }
+
+    button[type=submit] {
+      width: 100%;
+      margin-top: 0.6rem;
+      padding: 0.65rem;
+      border: none;
+      border-radius: 8px;
+      background: #5050cc;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button[type=submit]:hover { background: #6060dd; }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: #8080cc;
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    /* VRButton lands inside body — give it breathing room */
+    body > button[style] { margin: 1rem auto; display: block !important; }
+  </style>
+</head>
+<body>
+  <div id="config-panel">
+    <h1>LSD2 &mdash; VR Presenter</h1>
+    <form id="config-form" autocomplete="off">
+      <div class="field">
+        <label for="server-url">Server URL</label>
+        <input id="server-url" type="text" placeholder="ws://192.168.x.x:3000" value="ws://localhost:3000" />
+      </div>
+      <div class="field">
+        <label for="session-id">Session ID</label>
+        <input id="session-id" type="text" placeholder="default" value="default" />
+      </div>
+      <div class="field">
+        <label for="metaphor">Visual Metaphor</label>
+        <select id="metaphor">
+          <option value="aurora">Aurora</option>
+          <option value="orbital">Orbital</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="decay-ms">Color Decay</label>
+        <div class="slider-row">
+          <input id="decay-ms" type="range" min="500" max="8000" step="100" value="3000" />
+          <span id="decay-label">3000 ms</span>
+        </div>
+      </div>
+      <button type="submit">Connect</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

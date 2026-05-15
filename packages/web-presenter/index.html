@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LSD2 Presenter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #050505; height: 100%; overflow: hidden; }
+    #main-canvas { display: block; width: 100vw; height: 100vh; }
+
+    #panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(8, 8, 8, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid #1f1f1f;
+      border-radius: 14px;
+      padding: 14px;
+      width: 250px;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #eee;
+      transition: opacity 0.3s;
+    }
+    #panel.hidden { opacity: 0; pointer-events: none; }
+
+    #panel label {
+      font-size: 0.7rem;
+      color: #555;
+      display: block;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    #panel input[type="text"],
+    #panel select {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 7px;
+      color: #eee;
+      font-size: 0.88rem;
+      padding: 7px 10px;
+      width: 100%;
+      outline: none;
+    }
+    #panel input[type="text"]:focus,
+    #panel select:focus { border-color: #4060ff; }
+
+    #panel select option { background: #111; }
+
+    #panel input[type="range"] {
+      width: 100%;
+      accent-color: #4060ff;
+      cursor: pointer;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .range-row span {
+      font-size: 0.75rem;
+      color: #888;
+      white-space: nowrap;
+      min-width: 44px;
+      text-align: right;
+    }
+
+    #panel button {
+      background: #4060ff;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 9px;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    #panel button:hover { background: #5575ff; }
+    #panel button.disconnect { background: #5c1010; }
+    #panel button.disconnect:hover { background: #7a1414; }
+
+    #status {
+      border-radius: 5px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      text-align: center;
+      background: #222;
+      letter-spacing: 0.05em;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      margin: 2px 0;
+    }
+
+    .hint { font-size: 0.62rem; color: #333; text-align: center; }
+
+    #overlay-note {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 4rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.07);
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="main-canvas"></canvas>
+
+  <div id="panel">
+    <div>
+      <label>Server URL</label>
+      <input id="server-url" type="text" value="ws://localhost:3000" />
+    </div>
+    <div>
+      <label>Session ID</label>
+      <input id="session-id" type="text" value="default" />
+    </div>
+    <div id="status">Disconnected</div>
+    <button id="connect-btn">Connect</button>
+
+    <hr class="section-divider" />
+
+    <div>
+      <label>Color Scheme</label>
+      <select id="scheme-select" disabled>
+        <option value="chromatic">Chromatic — 12-tone circle</option>
+        <option value="newton">Newton — rainbow</option>
+        <option value="scriabin">Scriabin — synesthetic</option>
+        <option value="frequency">Frequency — physics</option>
+        <option value="interval">Interval — harmonic</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Color Decay — <span id="decay-val">3000</span> ms</label>
+      <div class="range-row">
+        <input id="decay-range" type="range" min="500" max="10000" step="100" value="3000" />
+        <span id="decay-label">3.0 s</span>
+      </div>
+    </div>
+
+    <div>
+      <label>Smoothing — <span id="smooth-val">3</span> frames</label>
+      <div class="range-row">
+        <input id="smooth-range" type="range" min="1" max="10" step="1" value="3" disabled />
+        <span id="smooth-label">3</span>
+      </div>
+    </div>
+
+    <hr class="section-divider" />
+    <div class="hint">H — toggle this panel</div>
+  </div>
+
+  <div id="overlay-note">—</div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "lsd2",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build:libs": "pnpm --filter @lsd2/protocol build && pnpm --filter @lsd2/color-mapping build",
+    "dev": "pnpm build:libs && concurrently -n proto,color,server,capture,presenter,vr -c white,white,blue,green,yellow,cyan \"pnpm --filter @lsd2/protocol dev\" \"pnpm --filter @lsd2/color-mapping dev\" \"pnpm --filter @lsd2/server dev\" \"pnpm --filter @lsd2/capture-client dev\" \"pnpm --filter @lsd2/web-presenter dev\" \"pnpm --filter @lsd2/vr-presenter dev\"",
+    "typecheck": "pnpm -r exec tsc --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "typescript": "^5.5.0"
+  }
+}

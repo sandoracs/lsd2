@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <title>LSD2 Capture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      gap: 16px;
+    }
+    h1 {
+      font-size: 1.2rem;
+      letter-spacing: 0.3em;
+      color: #666;
+      font-weight: 300;
+    }
+    .card {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 14px;
+      padding: 16px;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    label {
+      font-size: 0.72rem;
+      color: #666;
+      display: block;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input {
+      background: #0a0a0a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #eee;
+      font-size: 0.95rem;
+      padding: 9px 12px;
+      width: 100%;
+      outline: none;
+    }
+    input:focus { border-color: #4060ff; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    button {
+      background: #4060ff;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 13px;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    button:hover { background: #5575ff; }
+    button.stop { background: #8b0000; }
+    button.stop:hover { background: #a00; }
+    #status {
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      text-align: center;
+      background: #333;
+      letter-spacing: 0.05em;
+    }
+    #current-note {
+      font-size: 2.8rem;
+      font-weight: 800;
+      text-align: center;
+      color: #fff;
+      min-height: 3.5rem;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    #current-freq {
+      font-size: 0.85rem;
+      color: #555;
+      text-align: center;
+      min-height: 1.2rem;
+    }
+    .vu-wrap {
+      background: #0a0a0a;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+    #vu-bar {
+      background: linear-gradient(to right, #00cc66, #ffaa00, #cc0000);
+      height: 100%;
+      width: 0%;
+      transition: width 60ms linear;
+    }
+  </style>
+</head>
+<body>
+  <h1>LSD2 CAPTURE</h1>
+
+  <div class="card">
+    <div>
+      <label>Server URL</label>
+      <input id="server-url" type="text" value="ws://localhost:3000" />
+    </div>
+    <div class="row">
+      <div>
+        <label>Session ID</label>
+        <input id="session-id" type="text" value="default" />
+      </div>
+      <div>
+        <label>Max Overtones</label>
+        <input id="max-overtones" type="number" value="8" min="1" max="16" />
+      </div>
+    </div>
+    <div>
+      <label>Noise Gate (dB)</label>
+      <input id="noise-gate" type="number" value="-40" min="-60" max="-10" />
+    </div>
+    <div id="status">Stopped</div>
+    <button id="connect-btn">Start Capture</button>
+  </div>
+
+  <div class="card">
+    <div id="current-note">—</div>
+    <div id="current-freq"></div>
+    <div class="vu-wrap"><div id="vu-bar"></div></div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

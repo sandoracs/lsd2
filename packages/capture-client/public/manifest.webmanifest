@@ -1,0 +1,10 @@
+{
+  "name": "LSD2 Capture",
+  "short_name": "Capture",
+  "description": "LSD2 microphone capture client",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": []
+}
