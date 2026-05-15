@@ -95,9 +95,14 @@
   <div id="config-panel">
     <h1>LSD2 &mdash; VR Presenter</h1>
 
-    <div class="cert-hint">
+    <div id="cert-hint" class="cert-hint" style="position:relative;">
       First time? <a id="cert-link" href="#" target="_blank">Open server health page</a>
       in a new tab and accept the self-signed certificate, then come back here.
+      <button onclick="document.getElementById('cert-hint').remove()" style="
+        position:absolute;top:50%;right:8px;transform:translateY(-50%);
+        background:none;border:none;color:#a08840;font-size:1rem;line-height:1;
+        cursor:pointer;padding:2px 4px;
+      ">&times;</button>
     </div>
 
     <form id="config-form" autocomplete="off">
