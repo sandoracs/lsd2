@@ -13,6 +13,7 @@ export function initUI(): void {
   const vuBar = document.getElementById('vu-bar') as HTMLDivElement;
 
   let stopCapture: (() => void) | null = null;
+  let activeSender: ReturnType<typeof createWsSender> | null = null;
   let active = false;
 
   function setStatus(text: string, bg: string) {
@@ -24,6 +25,8 @@ export function initUI(): void {
     if (active) {
       stopCapture?.();
       stopCapture = null;
+      activeSender?.close();
+      activeSender = null;
       active = false;
       connectBtn.textContent = 'Start Capture';
       connectBtn.classList.remove('stop');
@@ -44,7 +47,9 @@ export function initUI(): void {
       setStatus('Requesting microphone…', '#666');
 
       const sender = createWsSender(wsUrl);
+      activeSender = sender;
       sender.onStatusChange = (status) => {
+        if (!active && status !== 'connected') return; // don't overwrite an error
         if (status === 'connected') setStatus('● Live', '#1a6b1a');
         else if (status === 'disconnected') setStatus('Reconnecting…', '#7a4400');
       };
@@ -74,6 +79,8 @@ export function initUI(): void {
       connectBtn.textContent = 'Stop Capture';
       connectBtn.classList.add('stop');
     } catch (err) {
+      activeSender?.close();
+      activeSender = null;
       setStatus(`Error: ${(err as Error).message}`, '#6b1a1a');
     }
   });

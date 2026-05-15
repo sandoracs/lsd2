@@ -24,11 +24,26 @@
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 16px;
       padding: 2rem 2.4rem;
-      width: min(420px, 96vw);
+      width: min(440px, 96vw);
       backdrop-filter: blur(12px);
     }
 
     h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.5rem; letter-spacing: 0.03em; }
+
+    .cert-hint {
+      background: rgba(255,200,50,0.1);
+      border: 1px solid rgba(255,200,50,0.3);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      margin-bottom: 1.2rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: #e0d090;
+    }
+    .cert-hint a {
+      color: #ffd060;
+      font-weight: 600;
+    }
 
     .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.1rem; }
 
@@ -73,17 +88,22 @@
       min-height: 1.2em;
     }
 
-    /* VRButton lands inside body — give it breathing room */
     body > button[style] { margin: 1rem auto; display: block !important; }
   </style>
 </head>
 <body>
   <div id="config-panel">
     <h1>LSD2 &mdash; VR Presenter</h1>
+
+    <div class="cert-hint">
+      First time? <a id="cert-link" href="#" target="_blank">Open server health page</a>
+      in a new tab and accept the self-signed certificate, then come back here.
+    </div>
+
     <form id="config-form" autocomplete="off">
       <div class="field">
         <label for="server-url">Server URL</label>
-        <input id="server-url" type="text" placeholder="ws://192.168.x.x:3000" value="ws://localhost:3000" />
+        <input id="server-url" type="text" placeholder="192.168.x.x:3000" value="192.168.0.132:3000" />
       </div>
       <div class="field">
         <label for="session-id">Session ID</label>

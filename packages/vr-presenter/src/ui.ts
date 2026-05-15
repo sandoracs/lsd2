@@ -14,11 +14,22 @@ export interface UiCallbacks {
 export function initUi(callbacks: UiCallbacks): void {
   const form = document.getElementById('config-form') as HTMLFormElement;
   const serverInput = document.getElementById('server-url') as HTMLInputElement;
+  const certLink = document.getElementById('cert-link') as HTMLAnchorElement;
   const sessionInput = document.getElementById('session-id') as HTMLInputElement;
   const metaphorSelect = document.getElementById('metaphor') as HTMLSelectElement;
   const decaySlider = document.getElementById('decay-ms') as HTMLInputElement;
   const decayLabel = document.getElementById('decay-label') as HTMLSpanElement;
   const statusEl = document.getElementById('status') as HTMLParagraphElement;
+
+  // Keep the cert-acceptance link in sync with the server URL field
+  function updateCertLink() {
+    const raw = serverInput.value.trim();
+    const https = raw.replace(/^wss?:\/\//, 'https://').replace(/^https?:\/\//, 'https://');
+    const url = /^https:\/\//.test(https) ? https : `https://${raw}`;
+    certLink.href = `${url}/health`;
+  }
+  serverInput.addEventListener('input', updateCertLink);
+  updateCertLink();
 
   decaySlider.addEventListener('input', () => {
     const ms = Number(decaySlider.value);
@@ -33,11 +44,12 @@ export function initUi(callbacks: UiCallbacks): void {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const raw = serverInput.value.trim();
-    // normalise: accept http(s):// or ws(s):// or bare host:port
+    // Normalise to wss:// — the server now always runs HTTPS
     let serverUrl = raw;
     if (!/^wss?:\/\//.test(raw)) {
-      serverUrl = raw.replace(/^https?:\/\//, 'ws://').replace(/^wss?:\/\//, 'ws://');
-      if (!/^ws/.test(serverUrl)) serverUrl = `ws://${serverUrl}`;
+      serverUrl = `wss://${raw}`;
+    } else {
+      serverUrl = raw.replace(/^ws:\/\//, 'wss://');
     }
     const config: VrConfig = {
       serverUrl,

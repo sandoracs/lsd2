@@ -13,6 +13,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
+renderer.domElement.style.display = 'none'; // Three.js sets display:block inline; hide until XR session
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050510);
@@ -91,7 +92,7 @@ initUi({
       orbital.setDecayMs(decayMs);
     }
 
-    const wsUrl = `${config.serverUrl}/sessions/${config.sessionId}/ws?role=presenter`;
+    const wsUrl = `${config.serverUrl}/ws?sessionId=${config.sessionId}&role=presenter`;
     setStatus('Connecting…');
 
     const receiver = createWsReceiver(wsUrl, (frame: ColorFrame) => {
