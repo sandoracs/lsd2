@@ -150,9 +150,14 @@
 <body>
   <h1>LSD2 CAPTURE</h1>
 
-  <div class="card" style="background:#111;border-color:#2a2000;font-size:0.78rem;color:#c0a060;padding:12px 16px;">
+  <div id="cert-banner" class="card" style="background:#111;border-color:#2a2000;font-size:0.78rem;color:#c0a060;padding:12px 16px;position:relative;">
     First time? <a id="cert-link" href="https://192.168.0.132:3000/health" target="_blank"
       style="color:#ffcc44;font-weight:600;">Open server health page</a> and accept the certificate, then come back.
+    <button onclick="document.getElementById('cert-banner').remove()" style="
+      position:absolute;top:6px;right:8px;
+      background:none;border:none;color:#8a6a30;font-size:1rem;line-height:1;
+      cursor:pointer;padding:2px 4px;width:auto;
+    ">&times;</button>
   </div>
 
   <div class="card">
