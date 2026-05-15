@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG: SessionConfig = {
   maxOvertones: 8,
   noiseGateDb: -40,
   colorDecayMs: 3000,
-  smoothingWindow: 3,
+  smoothingWindow: 2,
   intervalTonic: null,
   customMapping: null,
 };

@@ -40,8 +40,8 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
   const source = audioCtx.createMediaStreamSource(stream);
 
   const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 4096;        // 4096 time-domain samples; 2048 freq bins
-  analyser.smoothingTimeConstant = 0.3;
+  analyser.fftSize = 2048;        // 2048 samples: 4× faster YIN, still covers 50 Hz floor
+  analyser.smoothingTimeConstant = 0.1; // minimal smoothing → faster overtone response
   source.connect(analyser);
 
   const timeDomain = new Float32Array(analyser.fftSize);
