@@ -28,6 +28,7 @@ export interface NoteFrame {
   fundamental: PitchData;
   overtones: PitchData[];
   maxOvertones: number;
+  beat: boolean;
 }
 
 export interface ColoredNote extends PitchData {
@@ -42,6 +43,7 @@ export interface ColorFrame {
   colorScheme: ColorSchemeName;
   fundamental: ColoredNote;
   overtones: ColoredNote[];
+  beat: boolean;
 }
 
 export interface SessionConfig {

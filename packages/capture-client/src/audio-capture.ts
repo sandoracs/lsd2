@@ -1,6 +1,7 @@
 import type { NoteFrame, PitchData } from '@lsd2/protocol';
 import { detectPitch } from './yin.js';
 import { extractOvertones } from './overtone-extractor.js';
+import { BeatDetector } from './beat-detector.js';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -46,6 +47,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
 
   const timeDomain = new Float32Array(analyser.fftSize);
   const freqDomain = new Float32Array(analyser.frequencyBinCount);
+  const beatDetector = new BeatDetector();
 
   const interval = setInterval(() => {
     analyser.getFloatTimeDomainData(timeDomain);
@@ -54,6 +56,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
     const rms = computeRMS(timeDomain);
     const db = rmsToDb(rms);
     onAmplitude(db);
+    const beat = beatDetector.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize);
 
     if (db < noiseGateDb) {
       onFrame({
@@ -64,6 +67,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
         fundamental: { frequency: 0, amplitude: 0, note: '', octave: 0, cents: 0 },
         overtones: [],
         maxOvertones,
+        beat: false,
       });
       return;
     }
@@ -98,6 +102,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
       fundamental,
       overtones,
       maxOvertones,
+      beat,
     });
   }, Math.round(1000 / frameRateHz));
 

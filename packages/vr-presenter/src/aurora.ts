@@ -39,19 +39,26 @@ function bandKey(note: ColoredNote): string {
   return `${note.note}${note.octave}`;
 }
 
+const BEAT_FLASH_MS = 350;
+
 export class AuroraScene {
   private group = new THREE.Group();
   private bands = new Map<string, AuroraBand>();
   private gradientTex: THREE.CanvasTexture;
   private decayMs = 3000;
+  private beatFlashAt = 0;
+  private beatFlashStrength = 0;
 
   constructor(scene: THREE.Scene) {
     scene.add(this.group);
     this.gradientTex = makeGradientTexture();
   }
 
-  setDecayMs(ms: number): void {
-    this.decayMs = ms;
+  setDecayMs(ms: number): void { this.decayMs = ms; }
+
+  onBeat(intensity: number): void {
+    this.beatFlashAt = performance.now();
+    this.beatFlashStrength = intensity;
   }
 
   update(frame: ColorFrame): void {
@@ -117,6 +124,12 @@ export class AuroraScene {
       }
     }
 
+    // Beat flash: uniform brightness boost across all bands
+    const beatAge = now - this.beatFlashAt;
+    const beatContrib = beatAge < BEAT_FLASH_MS
+      ? this.beatFlashStrength * 0.9 * Math.exp(-beatAge / (BEAT_FLASH_MS * 0.35))
+      : 0;
+
     // Update every band's scale and opacity each frame
     for (const [key, band] of this.bands) {
       const mat = band.mesh.material as THREE.MeshBasicMaterial;
@@ -143,7 +156,7 @@ export class AuroraScene {
         ? band.attackStrength * Math.exp(-attackAge / (ATTACK_DECAY_MS * 0.4))
         : 0;
 
-      mat.opacity = Math.min(2, band.peakAlpha * fadeIn * fadeOut + flash);
+      mat.opacity = Math.min(2, band.peakAlpha * fadeIn * fadeOut + flash + beatContrib);
 
       // Width breathes with amplitude (0.4–1.0 × base); height is steadier (0.7–1.0)
       const w = 0.4 + band.amplitude * 0.6;

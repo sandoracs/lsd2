@@ -3,6 +3,7 @@ import type { ColorFrame } from '@lsd2/protocol';
 
 const SPHERE_POSITION = new THREE.Vector3(0, 1.6, -3);
 const FADE_MS = 600;
+const BEAT_FLASH_MS = 350;
 
 interface OrbitalGroup {
   group: THREE.Group;
@@ -59,13 +60,18 @@ export class OrbitalScene {
   private lastKey = '';
   private decayMs = 3000;
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  private beatFlashAt = 0;
+  private beatFlashStrength = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
   }
 
-  setDecayMs(ms: number): void {
-    this.decayMs = ms;
+  setDecayMs(ms: number): void { this.decayMs = ms; }
+
+  onBeat(intensity: number): void {
+    this.beatFlashAt = performance.now();
+    this.beatFlashStrength = intensity;
   }
 
   update(frame: ColorFrame, delta: number): void {
@@ -87,6 +93,17 @@ export class OrbitalScene {
         this.scene.add(light);
         this.lastKey = key;
       }
+    }
+
+    // Beat pulse: scale up the whole group on kick
+    const beatAge = performance.now() - this.beatFlashAt;
+    const beatScale = beatAge < BEAT_FLASH_MS
+      ? 1 + this.beatFlashStrength * 0.35 * Math.exp(-beatAge / (BEAT_FLASH_MS * 0.35))
+      : 1;
+    if (this.current && !this.current.startedFadingAt) {
+      this.current.group.scale.setScalar(beatScale);
+      const beatExpFactor = Math.exp(-beatAge / (BEAT_FLASH_MS * 0.35));
+      this.current.light.intensity = 1.5 * (1 + this.beatFlashStrength * 1.5 * beatExpFactor);
     }
 
     // rotate rings on current group

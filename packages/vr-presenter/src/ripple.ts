@@ -26,6 +26,24 @@ export class RippleScene {
 
   setDecayMs(ms: number): void { this.decayMs = ms; }
 
+  onBeat(intensity: number): void {
+    const now = performance.now();
+    const lifetime = 600 + intensity * 400;
+    const geo = new THREE.TorusGeometry(START_RADIUS * 0.5, 0.025, 6, 100);
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(1, 1, 1),
+      transparent: true,
+      opacity: Math.min(1, 0.5 + intensity * 0.5),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = Math.PI / 2;
+    mesh.position.y = BAND_Y_BASE;
+    this.group.add(mesh);
+    this.rings.push({ mesh, spawnedAt: now, lifetime });
+  }
+
   update(frame: ColorFrame): void {
     const now = performance.now();
 

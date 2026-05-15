@@ -7,6 +7,7 @@ const FADE_IN_MS = 100;
 const FADE_OUT_MS = 600;
 const ATTACK_THRESHOLD = 0.08;
 const ATTACK_DECAY_MS = 180;
+const BEAT_FLASH_MS = 350;
 
 interface Star {
   mesh: THREE.Mesh;
@@ -26,12 +27,19 @@ export class ConstellationScene {
   private group = new THREE.Group();
   private stars = new Map<string, Star>();
   private decayMs = 3000;
+  private beatFlashAt = 0;
+  private beatFlashStrength = 0;
 
   constructor(scene: THREE.Scene) {
     scene.add(this.group);
   }
 
   setDecayMs(ms: number): void { this.decayMs = ms; }
+
+  onBeat(intensity: number): void {
+    this.beatFlashAt = performance.now();
+    this.beatFlashStrength = intensity;
+  }
 
   update(frame: ColorFrame): void {
     const now = performance.now();
@@ -82,6 +90,11 @@ export class ConstellationScene {
       }
     }
 
+    const beatAge = now - this.beatFlashAt;
+    const beatContrib = beatAge < BEAT_FLASH_MS
+      ? this.beatFlashStrength * 0.9 * Math.exp(-beatAge / (BEAT_FLASH_MS * 0.35))
+      : 0;
+
     for (const [key, star] of this.stars) {
       const mat = star.mesh.material as THREE.MeshBasicMaterial;
       const remaining = star.expiresAt - now;
@@ -101,7 +114,7 @@ export class ConstellationScene {
         ? star.attackStrength * Math.exp(-attackAge / (ATTACK_DECAY_MS * 0.4))
         : 0;
 
-      mat.opacity = Math.min(2, star.peakAlpha * fadeIn * fadeOut + flash);
+      mat.opacity = Math.min(2, star.peakAlpha * fadeIn * fadeOut + flash + beatContrib);
 
       // Pulsing size: large on attack, breathes with amplitude
       const sizeScale = (0.5 + star.amplitude * 1.2) * (1 + flash * 0.6);

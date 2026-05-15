@@ -43,6 +43,7 @@ let constellation: ConstellationScene | null = null;
 let ripple: RippleScene | null = null;
 let frozen = false;
 let lastFrame: ColorFrame | null = null;
+let lastBeatFrameTs = 0;
 let currentMetaphor: Metaphor = 'aurora';
 let decayMs = 3000;
 
@@ -87,6 +88,14 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const delta = clock.getDelta();
   if (!frozen && lastFrame) {
+    if (lastFrame.beat && lastFrame.timestamp !== lastBeatFrameTs) {
+      lastBeatFrameTs = lastFrame.timestamp;
+      const intensity = Math.min(1, lastFrame.fundamental.amplitude * 1.2);
+      aurora?.onBeat(intensity);
+      orbital?.onBeat(intensity);
+      constellation?.onBeat(intensity);
+      ripple?.onBeat(intensity);
+    }
     aurora?.update(lastFrame);
     orbital?.update(lastFrame, delta);
     constellation?.update(lastFrame);
