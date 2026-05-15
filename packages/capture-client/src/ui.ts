@@ -11,6 +11,7 @@ export function initUI(): void {
   const noteEl = document.getElementById('current-note') as HTMLDivElement;
   const freqEl = document.getElementById('current-freq') as HTMLDivElement;
   const vuBar = document.getElementById('vu-bar') as HTMLDivElement;
+  const overtonesEl = document.getElementById('overtones') as HTMLDivElement;
 
   let stopCapture: (() => void) | null = null;
   let activeSender: ReturnType<typeof createWsSender> | null = null;
@@ -64,9 +65,18 @@ export function initUI(): void {
           if (!frame.silence && frame.fundamental.note) {
             noteEl.textContent = `${frame.fundamental.note}${frame.fundamental.octave}`;
             freqEl.textContent = `${frame.fundamental.frequency.toFixed(1)} Hz`;
+            overtonesEl.innerHTML = frame.overtones.map(o => `
+              <div class="overtone-row">
+                <span class="overtone-note">${o.note}${o.octave}</span>
+                <span class="overtone-freq">${o.frequency.toFixed(1)} Hz</span>
+                <div class="overtone-amp">
+                  <div class="overtone-amp-fill" style="width:${Math.round(o.amplitude * 100)}%"></div>
+                </div>
+              </div>`).join('');
           } else {
             noteEl.textContent = '—';
             freqEl.textContent = '';
+            overtonesEl.innerHTML = '';
           }
         },
         onAmplitude: (db) => {
