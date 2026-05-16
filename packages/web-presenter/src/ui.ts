@@ -1,6 +1,17 @@
 import type { ColorFrame, ColorSchemeName, SessionConfig } from '@lsd2/protocol';
 import { createWsReceiver, type WsReceiver } from './ws-receiver.js';
-import type { Renderer } from './renderer.js';
+import type { Renderer, MetaphorName } from './renderer.js';
+
+const STORAGE_KEY = 'lsd2-web';
+
+function loadSettings(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, string>; }
+  catch { return {}; }
+}
+
+function saveSettings(data: Record<string, string>): void {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+}
 
 function wsToHttp(wsUrl: string): string {
   return wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
@@ -37,20 +48,33 @@ async function pushConfig(
 }
 
 export function initUI(renderer: Renderer): void {
-  const serverUrlInput = document.getElementById('server-url') as HTMLInputElement;
-  const sessionIdInput = document.getElementById('session-id') as HTMLInputElement;
-  const connectBtn = document.getElementById('connect-btn') as HTMLButtonElement;
-  const statusEl = document.getElementById('status') as HTMLDivElement;
-  const overlayNote = document.getElementById('overlay-note') as HTMLDivElement;
-  const panel = document.getElementById('panel') as HTMLDivElement;
+  const serverUrlInput  = document.getElementById('server-url') as HTMLInputElement;
+  const sessionIdInput  = document.getElementById('session-id') as HTMLInputElement;
+  const connectBtn      = document.getElementById('connect-btn') as HTMLButtonElement;
+  const statusEl        = document.getElementById('status') as HTMLDivElement;
+  const overlayNote     = document.getElementById('overlay-note') as HTMLDivElement;
+  const panel           = document.getElementById('panel') as HTMLDivElement;
+  const metaphorSelect  = document.getElementById('metaphor-select') as HTMLSelectElement;
+  const schemeSelect    = document.getElementById('scheme-select') as HTMLSelectElement;
+  const decayRange      = document.getElementById('decay-range') as HTMLInputElement;
+  const decayVal        = document.getElementById('decay-val') as HTMLSpanElement;
+  const decayLabel      = document.getElementById('decay-label') as HTMLSpanElement;
+  const smoothRange     = document.getElementById('smooth-range') as HTMLInputElement;
+  const smoothVal       = document.getElementById('smooth-val') as HTMLSpanElement;
+  const smoothLabel     = document.getElementById('smooth-label') as HTMLSpanElement;
 
-  const schemeSelect = document.getElementById('scheme-select') as HTMLSelectElement;
-  const decayRange = document.getElementById('decay-range') as HTMLInputElement;
-  const decayVal = document.getElementById('decay-val') as HTMLSpanElement;
-  const decayLabel = document.getElementById('decay-label') as HTMLSpanElement;
-  const smoothRange = document.getElementById('smooth-range') as HTMLInputElement;
-  const smoothVal = document.getElementById('smooth-val') as HTMLSpanElement;
-  const smoothLabel = document.getElementById('smooth-label') as HTMLSpanElement;
+  // Restore settings
+  const saved = loadSettings();
+  if (saved.serverUrl)  serverUrlInput.value  = saved.serverUrl;
+  if (saved.sessionId)  sessionIdInput.value  = saved.sessionId;
+  if (saved.metaphor)   metaphorSelect.value  = saved.metaphor;
+  if (saved.decayMs) {
+    decayRange.value = saved.decayMs;
+    decayVal.textContent   = saved.decayMs;
+    decayLabel.textContent = `${(Number(saved.decayMs) / 1000).toFixed(1)} s`;
+    renderer.setDecayMs(Number(saved.decayMs));
+  }
+  renderer.setMetaphor((metaphorSelect.value || 'aurora') as MetaphorName);
 
   let receiver: WsReceiver | null = null;
   let connected = false;
@@ -75,6 +99,13 @@ export function initUI(renderer: Renderer): void {
       overlayNote.textContent = '—';
     }
   }
+
+  // Metaphor selector
+  metaphorSelect.addEventListener('change', () => {
+    renderer.setMetaphor(metaphorSelect.value as MetaphorName);
+    saveSettings({ serverUrl: serverUrlInput.value, sessionId: sessionIdInput.value,
+      metaphor: metaphorSelect.value, decayMs: decayRange.value });
+  });
 
   // Decay control — local only (affects renderer, not server config)
   decayRange.addEventListener('input', () => {
@@ -113,6 +144,7 @@ export function initUI(renderer: Renderer): void {
 
     const serverUrl = serverUrlInput.value.trim();
     const sessionId = sessionIdInput.value.trim() || 'default';
+    saveSettings({ serverUrl, sessionId, metaphor: metaphorSelect.value, decayMs: decayRange.value });
     currentHttpBase = wsToHttp(serverUrl);
     currentSessionId = sessionId;
 

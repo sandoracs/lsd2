@@ -125,7 +125,7 @@
   <div id="panel">
     <div>
       <label>Server URL</label>
-      <input id="server-url" type="text" value="ws://localhost:3000" />
+      <input id="server-url" type="text" value="wss://192.168.0.132:3000" />
     </div>
     <div>
       <label>Session ID</label>
@@ -133,6 +133,19 @@
     </div>
     <div id="status">Disconnected</div>
     <button id="connect-btn">Connect</button>
+
+    <hr class="section-divider" />
+
+    <div>
+      <label>Visual Metaphor</label>
+      <select id="metaphor-select">
+        <option value="aurora">Aurora</option>
+        <option value="constellation">Constellation</option>
+        <option value="ripple">Ripple</option>
+        <option value="orbital">Orbital</option>
+        <option value="fire">Fire</option>
+      </select>
+    </div>
 
     <hr class="section-divider" />
 
