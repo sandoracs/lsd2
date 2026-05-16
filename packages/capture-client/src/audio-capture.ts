@@ -1,18 +1,6 @@
-import type { NoteFrame, PitchData } from '@lsd2/protocol';
-import { detectPitch } from './yin.js';
-import { extractOvertones } from './overtone-extractor.js';
+import type { NoteFrame } from '@lsd2/protocol';
+import { PolyphonicDetector } from './polyphonic-detector.js';
 import { BeatDetector } from './beat-detector.js';
-
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-function frequencyToNote(frequency: number): { note: string; octave: number; cents: number } {
-  const midi = 12 * Math.log2(frequency / 440) + 69;
-  const rounded = Math.round(midi);
-  const semitone = ((rounded % 12) + 12) % 12;
-  const octave = Math.floor(rounded / 12) - 1;
-  const cents = Math.round((midi - rounded) * 100);
-  return { note: NOTE_NAMES[semitone], octave, cents };
-}
 
 function computeRMS(buffer: Float32Array): number {
   let sum = 0;
@@ -36,73 +24,50 @@ export interface CaptureOptions {
 export async function startCapture(options: CaptureOptions): Promise<() => void> {
   const { sessionId, maxOvertones, noiseGateDb, frameRateHz, onFrame, onAmplitude } = options;
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  const stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
   const audioCtx = new AudioContext({ sampleRate: 44100 });
-  const source = audioCtx.createMediaStreamSource(stream);
+  const source   = audioCtx.createMediaStreamSource(stream);
 
   const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 2048;        // 2048 samples: 4× faster YIN, still covers 50 Hz floor
-  analyser.smoothingTimeConstant = 0.1; // minimal smoothing → faster overtone response
+  analyser.fftSize = 4096;           // 10.8 Hz/bin — better chord resolution than 2048
+  analyser.smoothingTimeConstant = 0.1;
   source.connect(analyser);
 
   const timeDomain = new Float32Array(analyser.fftSize);
   const freqDomain = new Float32Array(analyser.frequencyBinCount);
-  const beatDetector = new BeatDetector();
+  const polyDetect = new PolyphonicDetector(analyser.frequencyBinCount);
+  const beatDetect = new BeatDetector();
 
   const interval = setInterval(() => {
     analyser.getFloatTimeDomainData(timeDomain);
     analyser.getFloatFrequencyData(freqDomain);
 
     const rms = computeRMS(timeDomain);
-    const db = rmsToDb(rms);
+    const db  = rmsToDb(rms);
     onAmplitude(db);
-    const beat = beatDetector.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize);
+
+    const beat = beatDetect.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize);
 
     if (db < noiseGateDb) {
       onFrame({
-        type: 'note_frame',
-        timestamp: Date.now(),
-        sessionId,
-        silence: true,
+        type: 'note_frame', timestamp: Date.now(), sessionId,
+        silence: true, beat: false,
         fundamental: { frequency: 0, amplitude: 0, note: '', octave: 0, cents: 0 },
-        overtones: [],
-        maxOvertones,
-        beat: false,
+        overtones: [], maxOvertones,
       });
       return;
     }
 
-    const fundamentalHz = detectPitch(timeDomain, audioCtx.sampleRate);
-    if (fundamentalHz === null) return;
-
-    // Normalize amplitude: RMS of 0.1 ≈ loud signal; scale to 0–1
-    const amplitude = Math.min(1, rms * 8);
-    const { note, octave, cents } = frequencyToNote(fundamentalHz);
-    const fundamental: PitchData = { frequency: fundamentalHz, amplitude, note, octave, cents };
-
-    const rawOvertones = extractOvertones(
-      freqDomain,
-      fundamentalHz,
-      audioCtx.sampleRate,
-      analyser.fftSize,   // fftSize = 4096, not frequencyBinCount
-      maxOvertones,
-      noiseGateDb,
-    );
-
-    const overtones: PitchData[] = rawOvertones.map(o => {
-      const nInfo = frequencyToNote(o.frequency);
-      return { frequency: o.frequency, amplitude: o.amplitude, ...nInfo };
-    });
+    // Detect up to (1 fundamental + maxOvertones) simultaneous pitches
+    const pitches = polyDetect.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize, noiseGateDb, 1 + maxOvertones);
+    if (pitches.length === 0) return;
 
     onFrame({
-      type: 'note_frame',
-      timestamp: Date.now(),
-      sessionId,
-      silence: false,
-      fundamental,
-      overtones,
+      type: 'note_frame', timestamp: Date.now(), sessionId,
+      silence: false, beat,
+      fundamental: pitches[0],
+      overtones:   pitches.slice(1),
       maxOvertones,
-      beat,
     });
   }, Math.round(1000 / frameRateHz));
 
