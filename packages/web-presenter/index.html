@@ -131,6 +131,10 @@
       <label>Session ID</label>
       <input id="session-id" type="text" value="default" />
     </div>
+    <div id="cert-hint" style="background:rgba(255,200,50,0.08);border:1px solid rgba(255,200,50,0.25);border-radius:6px;padding:7px 10px;font-size:0.7rem;color:#c0a060;line-height:1.5;position:relative;">
+      First time? <a id="cert-link" href="#" target="_blank" style="color:#ffd060;font-weight:600;">Accept the server certificate</a> then reconnect.
+      <button onclick="document.getElementById('cert-hint').remove()" style="position:absolute;top:4px;right:6px;background:none;border:none;color:#8a6030;font-size:0.9rem;cursor:pointer;padding:0 2px;">&times;</button>
+    </div>
     <div id="status">Disconnected</div>
     <button id="connect-btn">Connect</button>
 

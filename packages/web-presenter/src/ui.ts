@@ -48,6 +48,7 @@ async function pushConfig(
 }
 
 export function initUI(renderer: Renderer): void {
+  const certLink        = document.getElementById('cert-link') as HTMLAnchorElement | null;
   const serverUrlInput  = document.getElementById('server-url') as HTMLInputElement;
   const sessionIdInput  = document.getElementById('session-id') as HTMLInputElement;
   const connectBtn      = document.getElementById('connect-btn') as HTMLButtonElement;
@@ -62,6 +63,16 @@ export function initUI(renderer: Renderer): void {
   const smoothRange     = document.getElementById('smooth-range') as HTMLInputElement;
   const smoothVal       = document.getElementById('smooth-val') as HTMLSpanElement;
   const smoothLabel     = document.getElementById('smooth-label') as HTMLSpanElement;
+
+  function updateCertLink() {
+    if (!certLink) return;
+    const raw = serverUrlInput.value.trim();
+    const base = raw.replace(/^wss?:\/\//, 'https://').replace(/^https?:\/\//, 'https://');
+    const url = /^https:\/\//.test(base) ? base : `https://${raw}`;
+    certLink.href = `${url}/health`;
+  }
+  serverUrlInput.addEventListener('input', updateCertLink);
+  updateCertLink();
 
   // Restore settings
   const saved = loadSettings();
