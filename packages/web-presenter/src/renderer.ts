@@ -41,6 +41,9 @@ export function createRenderer(canvas: HTMLCanvasElement, initialDecayMs = 3000)
   let chordOpacity = 0;
   let chordTargetOpacity = 0;
   let chordLastAt = 0;
+  // Key overlay state
+  let keyLabel = '';
+  let keyOpacity = 0;
   let prevLoopTime = performance.now();
 
   function resize() {
@@ -74,6 +77,24 @@ export function createRenderer(canvas: HTMLCanvasElement, initialDecayMs = 3000)
     ctx.restore();
   }
 
+  function drawKey(dt: number) {
+    const target = keyLabel ? 1 : 0;
+    keyOpacity += (target - keyOpacity) * Math.min(1, dt * 3);
+    if (keyOpacity < 0.01) return;
+
+    const { width: w, height: h } = canvas;
+    const fontSize = Math.round(Math.min(w, h) * 0.025);
+    const pad = fontSize * 0.7;
+    ctx.save();
+    ctx.globalAlpha = keyOpacity * 0.75;
+    ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#88ffcc';
+    ctx.fillText(keyLabel.toUpperCase(), w - pad, pad);
+    ctx.restore();
+  }
+
   function loop() {
     if (!running) return;
     const now = performance.now();
@@ -88,14 +109,22 @@ export function createRenderer(canvas: HTMLCanvasElement, initialDecayMs = 3000)
     if (lastFrame) scene.update(lastFrame);
     scene.draw(ctx, canvas.width, canvas.height);
     drawChord(now, dt);
+    drawKey(dt);
 
     rafId = requestAnimationFrame(loop);
   }
 
   window.addEventListener('resize', resize);
 
+  let lastColorScheme = '';
+
   return {
     render(frame: ColorFrame) {
+      // Flush cached note state when the server reports a different scheme
+      if (frame.colorScheme !== lastColorScheme) {
+        lastColorScheme = frame.colorScheme;
+        scene.dispose();
+      }
       lastFrame = frame;
       if (frame.beat && frame.timestamp !== lastBeatTs) {
         lastBeatTs = frame.timestamp;
@@ -103,6 +132,7 @@ export function createRenderer(canvas: HTMLCanvasElement, initialDecayMs = 3000)
       }
       if (frame.chord) { chordLabel = frame.chord; chordLastAt = performance.now(); }
       else if (frame.silence) { /* keep showing last chord until decay */ }
+      if (frame.key !== null && frame.key !== undefined) keyLabel = frame.key;
     },
 
     start() { running = true; resize(); loop(); },

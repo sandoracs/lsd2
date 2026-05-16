@@ -1,4 +1,4 @@
-import type { ColorFrame, ColorSchemeName, SessionConfig } from '@lsd2/protocol';
+import type { ColorFrame, ColorSchemeName } from '@lsd2/protocol';
 import { createWsReceiver, type WsReceiver } from './ws-receiver.js';
 import type { Renderer, MetaphorName } from './renderer.js';
 
@@ -11,40 +11,6 @@ function loadSettings(): Record<string, string> {
 
 function saveSettings(data: Record<string, string>): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
-}
-
-function wsToHttp(wsUrl: string): string {
-  return wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
-}
-
-async function fetchSessionConfig(
-  httpBase: string,
-  sessionId: string,
-): Promise<SessionConfig | null> {
-  try {
-    const res = await fetch(`${httpBase}/sessions/${encodeURIComponent(sessionId)}`);
-    if (!res.ok) return null;
-    const data = await res.json() as { config: SessionConfig };
-    return data.config ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function pushConfig(
-  httpBase: string,
-  sessionId: string,
-  updates: Partial<SessionConfig>,
-): Promise<void> {
-  try {
-    await fetch(`${httpBase}/sessions/${encodeURIComponent(sessionId)}/config`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-  } catch {
-    // Best-effort
-  }
 }
 
 export function initUI(renderer: Renderer): void {
@@ -89,8 +55,6 @@ export function initUI(renderer: Renderer): void {
 
   let receiver: WsReceiver | null = null;
   let connected = false;
-  let currentHttpBase = '';
-  let currentSessionId = '';
 
   function setStatus(text: string, bg: string) {
     statusEl.textContent = text;
@@ -126,19 +90,19 @@ export function initUI(renderer: Renderer): void {
     renderer.setDecayMs(ms);
   });
 
-  // Smoothing control — pushes to server
+  // Smoothing control — pushes to server via WebSocket
   smoothRange.addEventListener('input', () => {
     const val = parseInt(smoothRange.value);
     smoothVal.textContent = String(val);
     smoothLabel.textContent = String(val);
-    void pushConfig(currentHttpBase, currentSessionId, { smoothingWindow: val });
+    receiver?.send({ type: 'config_update', smoothingWindow: val });
   });
 
-  // Color scheme — pushes to server
+  // Color scheme — pushes to server via WebSocket
   schemeSelect.addEventListener('change', () => {
-    void pushConfig(currentHttpBase, currentSessionId, {
-      colorScheme: schemeSelect.value as ColorSchemeName,
-    });
+    const msg = { type: 'config_update', colorScheme: schemeSelect.value as ColorSchemeName };
+    console.log('[ui] scheme change → send', msg, 'receiver:', receiver ? 'set' : 'null');
+    receiver?.send(msg);
   });
 
   connectBtn.addEventListener('click', async () => {
@@ -156,29 +120,25 @@ export function initUI(renderer: Renderer): void {
     const serverUrl = serverUrlInput.value.trim();
     const sessionId = sessionIdInput.value.trim() || 'default';
     saveSettings({ serverUrl, sessionId, metaphor: metaphorSelect.value, decayMs: decayRange.value });
-    currentHttpBase = wsToHttp(serverUrl);
-    currentSessionId = sessionId;
 
     const wsUrl = `${serverUrl}/ws?sessionId=${encodeURIComponent(sessionId)}&role=presenter`;
     receiver = createWsReceiver(wsUrl, onFrame);
 
-    receiver.onStatusChange = async (status) => {
+    // Sync UI controls from server config delivered over WebSocket
+    receiver.onConfig = (config) => {
+      schemeSelect.value = config.colorScheme;
+      smoothRange.value = String(config.smoothingWindow);
+      smoothVal.textContent = String(config.smoothingWindow);
+      smoothLabel.textContent = String(config.smoothingWindow);
+    };
+
+    receiver.onStatusChange = (status) => {
       if (status === 'connected') {
         setStatus('● Live', '#1a6b1a');
         connected = true;
         connectBtn.textContent = 'Disconnect';
         connectBtn.classList.add('disconnect');
         setControlsEnabled(true);
-
-        // Sync UI controls with current server config
-        const config = await fetchSessionConfig(currentHttpBase, currentSessionId);
-        if (config) {
-          schemeSelect.value = config.colorScheme;
-          smoothRange.value = String(config.smoothingWindow);
-          smoothVal.textContent = String(config.smoothingWindow);
-          smoothLabel.textContent = String(config.smoothingWindow);
-          // colorDecayMs is local-only — keep whatever the slider shows
-        }
       } else if (status === 'connecting') {
         setStatus('Connecting…', '#443300');
       } else {
@@ -195,4 +155,5 @@ export function initUI(renderer: Renderer): void {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'h' || e.key === 'H') panel.classList.toggle('hidden');
   });
+
 }

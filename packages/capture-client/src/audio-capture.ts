@@ -2,6 +2,8 @@ import type { NoteFrame } from '@lsd2/protocol';
 import { PolyphonicDetector } from './polyphonic-detector.js';
 import { BeatDetector } from './beat-detector.js';
 import { detectChord } from './chord-detector.js';
+import { KeyDetector } from './key-detector.js';
+import { transposePitch } from './transpose.js';
 
 function computeRMS(buffer: Float32Array): number {
   let sum = 0;
@@ -17,13 +19,22 @@ export interface CaptureOptions {
   sessionId: string;
   maxOvertones: number;
   noiseGateDb: number;
+  transposeBy: number;  // semitones: +2 = Bb instrument, +9 = Eb, +7 = F
   frameRateHz: number;
   onFrame: (frame: NoteFrame) => void;
   onAmplitude: (db: number) => void;
 }
 
-export async function startCapture(options: CaptureOptions): Promise<() => void> {
-  const { sessionId, maxOvertones, noiseGateDb, frameRateHz, onFrame, onAmplitude } = options;
+export interface CaptureControls {
+  stop: () => void;
+  setNoiseGate: (db: number) => void;
+  setTranspose: (semitones: number) => void;
+}
+
+export async function startCapture(options: CaptureOptions): Promise<CaptureControls> {
+  const { sessionId, maxOvertones, frameRateHz, onFrame, onAmplitude } = options;
+  let noiseGateDb = options.noiseGateDb;
+  let transposeBy = options.transposeBy;
 
   const stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
   const audioCtx = new AudioContext({ sampleRate: 44100 });
@@ -38,6 +49,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
   const freqDomain = new Float32Array(analyser.frequencyBinCount);
   const polyDetect = new PolyphonicDetector(analyser.frequencyBinCount);
   const beatDetect = new BeatDetector();
+  const keyDetect  = new KeyDetector();
 
   const interval = setInterval(() => {
     analyser.getFloatTimeDomainData(timeDomain);
@@ -52,7 +64,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
     if (db < noiseGateDb) {
       onFrame({
         type: 'note_frame', timestamp: Date.now(), sessionId,
-        silence: true, beat: false, chord: null,
+        silence: true, beat: false, chord: null, key: keyDetect.detect(),
         fundamental: { frequency: 0, amplitude: 0, note: '', octave: 0, cents: 0 },
         overtones: [], maxOvertones,
       });
@@ -63,21 +75,28 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
     const pitches = polyDetect.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize, noiseGateDb, 1 + maxOvertones);
     if (pitches.length === 0) return;
 
-    const noteNames = pitches.map(p => p.note).filter(n => n !== '');
+    const transposed = pitches.map(p => transposePitch(p, transposeBy));
+    const noteNames = transposed.map(p => p.note).filter(n => n !== '');
     const chord = detectChord(noteNames)?.label ?? null;
+    for (const p of transposed) keyDetect.update(p.note, p.amplitude);
+    const key = keyDetect.detect();
 
     onFrame({
       type: 'note_frame', timestamp: Date.now(), sessionId,
-      silence: false, beat, chord,
-      fundamental: pitches[0],
-      overtones:   pitches.slice(1),
+      silence: false, beat, chord, key,
+      fundamental: transposed[0],
+      overtones:   transposed.slice(1),
       maxOvertones,
     });
   }, Math.round(1000 / frameRateHz));
 
-  return () => {
-    clearInterval(interval);
-    stream.getTracks().forEach(t => t.stop());
-    void audioCtx.close();
+  return {
+    stop() {
+      clearInterval(interval);
+      stream.getTracks().forEach(t => t.stop());
+      void audioCtx.close();
+    },
+    setNoiseGate(db: number) { noiseGateDb = db; },
+    setTranspose(semitones: number) { transposeBy = semitones; },
   };
 }

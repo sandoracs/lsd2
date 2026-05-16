@@ -31,6 +31,7 @@ export function applyColorMapping(
       overtones: frame.overtones.map(o => ({ ...o, color: SILENT_COLOR })),
       beat: frame.beat,
       chord: frame.chord,
+      key: frame.key,
     };
   }
   return {
@@ -43,5 +44,6 @@ export function applyColorMapping(
     overtones: frame.overtones.map(o => colorNote(o, config, intervalTonicSemitone)),
     beat: frame.beat,
     chord: frame.chord,
+    key: frame.key,
   };
 }

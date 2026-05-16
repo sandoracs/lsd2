@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Server } from 'http';
-import type { NoteFrame } from '@lsd2/protocol';
+import type { NoteFrame, SessionConfig } from '@lsd2/protocol';
 import { noteNameToSemitone } from '@lsd2/color-mapping';
 import { getOrCreateSession } from './session-store.js';
 import { applyColorMapping } from './color-mapper.js';
@@ -78,6 +78,23 @@ export function createWsHub(server: Server): WebSocketServer {
       ws.on('close', () => session.capturers.delete(ws));
     } else {
       session.presenters.add(ws);
+
+      // Send current config so presenter can sync its UI immediately
+      ws.send(JSON.stringify({ type: 'session_config', config: session.config }));
+
+      ws.on('message', (data) => {
+        try {
+          const msg = JSON.parse(data.toString()) as { type: string } & Partial<SessionConfig>;
+          if (msg.type !== 'config_update') return;
+          const { type: _type, ...updates } = msg;
+          console.log(`[ws-hub] config_update for session ${sessionId}:`, updates);
+          Object.assign(session.config, updates);
+          console.log(`[ws-hub] session config now:`, session.config);
+        } catch {
+          // Ignore malformed messages
+        }
+      });
+
       ws.on('close', () => session.presenters.delete(ws));
     }
   });

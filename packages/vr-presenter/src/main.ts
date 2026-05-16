@@ -112,7 +112,7 @@ renderer.setAnimationLoop(() => {
     ripple?.update(lastFrame);
     fire?.update(lastFrame);
   }
-  chordDisplay.update(lastFrame?.chord ?? null);
+  chordDisplay.update(lastFrame?.chord ?? null, lastFrame?.key ?? null);
   renderer.render(scene, camera);
 });
 

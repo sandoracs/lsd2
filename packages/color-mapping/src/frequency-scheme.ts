@@ -12,6 +12,5 @@ export function frequencyScheme(frequency: number, amplitude: number): HSLColor 
   const clamped = Math.max(0, Math.min(1, normalized));
   // 0 (bass) → H:0° (red), 1 (treble) → H:270° (violet)
   const h = Math.round(clamped * 270);
-  const s = Math.round(Math.min(100, amplitude * 100));
-  return { h, s, l: 50 };
+  return { h, s: 85, l: 50 };
 }

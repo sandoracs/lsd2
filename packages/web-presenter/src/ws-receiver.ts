@@ -1,10 +1,12 @@
-import type { ColorFrame } from '@lsd2/protocol';
+import type { ColorFrame, SessionConfig } from '@lsd2/protocol';
 
 export type ReceiverStatus = 'disconnected' | 'connecting' | 'connected';
 
 export interface WsReceiver {
   close(): void;
+  send(data: object): void;
   onStatusChange: ((status: ReceiverStatus) => void) | null;
+  onConfig: ((config: SessionConfig) => void) | null;
 }
 
 export function createWsReceiver(
@@ -17,10 +19,15 @@ export function createWsReceiver(
 
   const receiver: WsReceiver = {
     onStatusChange: null,
+    onConfig: null,
     close() {
       closed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       ws?.close();
+    },
+    send(data: object) {
+      console.log('[ws-receiver] send — readyState:', ws?.readyState, '(OPEN=1)');
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
     },
   };
 
@@ -35,8 +42,9 @@ export function createWsReceiver(
 
     ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(event.data as string);
+        const data = JSON.parse(event.data as string) as { type: string };
         if (data.type === 'color_frame') onFrame(data as ColorFrame);
+        else if (data.type === 'session_config') receiver.onConfig?.((data as { type: string; config: SessionConfig }).config);
       } catch {
         // Ignore malformed messages
       }

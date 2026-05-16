@@ -25,6 +25,5 @@ export function newtonScheme(frequency: number, amplitude: number): HSLColor {
   const { note, octave } = frequencyToNoteInfo(frequency);
   const h = NATURAL_HUES[note] ?? SHARP_HUES[note] ?? 0;
   const l = Math.max(20, Math.min(80, 50 + (octave - 4) * 6));
-  const s = Math.round(Math.min(100, amplitude * 100));
-  return { h, s, l };
+  return { h, s: 85, l };
 }

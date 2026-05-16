@@ -43,7 +43,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    input {
+    select {
       background: #0a0a0a;
       border: 1px solid #2a2a2a;
       border-radius: 8px;
@@ -53,7 +53,20 @@
       width: 100%;
       outline: none;
     }
-    input:focus { border-color: #4060ff; }
+    select:focus { border-color: #4060ff; }
+    input[type="text"],
+    input[type="number"] {
+      background: #0a0a0a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      color: #eee;
+      font-size: 0.95rem;
+      padding: 9px 12px;
+      width: 100%;
+      outline: none;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus { border-color: #4060ff; }
     .row { display: flex; gap: 10px; }
     .row > * { flex: 1; }
     button {
@@ -103,6 +116,15 @@
       min-height: 2.2rem;
       letter-spacing: 0.04em;
     }
+    #current-key {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      color: #508870;
+      min-height: 1.2rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     #overtones {
       display: flex;
       flex-direction: column;
@@ -140,18 +162,59 @@
       background: linear-gradient(to right, #336, #66a);
       border-radius: 2px;
     }
-    .vu-wrap {
-      background: #0a0a0a;
+
+    /* Combined VU + gate control */
+    .gate-wrap {
+      position: relative;
+      height: 28px;
+      display: flex;
+      align-items: center;
+    }
+    .gate-track {
+      position: absolute;
+      left: 0; right: 0;
+      height: 12px;
+      background: #0d0d0d;
       border-radius: 6px;
-      height: 10px;
       overflow: hidden;
-      width: 100%;
+      pointer-events: none;
     }
     #vu-bar {
-      background: linear-gradient(to right, #00cc66, #ffaa00, #cc0000);
       height: 100%;
       width: 0%;
+      background: linear-gradient(to right, #00cc66 0%, #ffaa00 65%, #cc0000 100%);
       transition: width 60ms linear;
+    }
+    #noise-gate {
+      -webkit-appearance: none;
+      appearance: none;
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      cursor: ew-resize;
+      margin: 0;
+      padding: 0;
+    }
+    #noise-gate::-webkit-slider-runnable-track { background: transparent; height: 100%; }
+    #noise-gate::-moz-range-track { background: transparent; height: 100%; }
+    #noise-gate::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 5px;
+      height: 28px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 3px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.6);
+      cursor: ew-resize;
+    }
+    #noise-gate::-moz-range-thumb {
+      width: 5px;
+      height: 28px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 3px;
+      border: none;
+      cursor: ew-resize;
     }
   </style>
 </head>
@@ -183,9 +246,31 @@
         <input id="max-overtones" type="number" value="8" min="1" max="16" />
       </div>
     </div>
-    <div>
-      <label>Noise Gate (dB)</label>
-      <input id="noise-gate" type="number" value="-40" min="-60" max="-10" />
+    <div class="row">
+      <div>
+        <label>Source</label>
+        <select id="source-select">
+          <option value="mic">Microphone</option>
+          <option value="midi">MIDI</option>
+        </select>
+      </div>
+      <div id="midi-device-wrap" style="display:none">
+        <label>MIDI Device</label>
+        <select id="midi-device">
+          <option value="">All devices</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Instrument Key</label>
+        <select id="instrument-key">
+          <option value="0">C (concert)</option>
+          <option value="2">Bb (clarinet, trumpet…)</option>
+          <option value="9">Eb (alto/bari sax…)</option>
+          <option value="7">F (horn…)</option>
+        </select>
+      </div>
     </div>
     <div id="status">Stopped</div>
     <button id="connect-btn">Start Capture</button>
@@ -195,7 +280,14 @@
     <div id="current-note">—</div>
     <div id="current-freq"></div>
     <div id="current-chord"></div>
-    <div class="vu-wrap"><div id="vu-bar"></div></div>
+    <div id="current-key"></div>
+    <div>
+      <label>Gate — <span id="gate-val">-40</span> <span id="gate-unit">dB</span></label>
+      <div class="gate-wrap">
+        <div class="gate-track"><div id="vu-bar"></div></div>
+        <input id="noise-gate" type="range" min="-60" max="-10" step="1" value="-40" />
+      </div>
+    </div>
     <div id="overtones"></div>
   </div>
 

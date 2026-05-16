@@ -23,6 +23,5 @@ export function scrabinScheme(frequency: number, amplitude: number): HSLColor {
   const { semitone, octave } = frequencyToNoteInfo(frequency);
   const h = SCRIABIN_HUES[semitone] ?? 0;
   const l = Math.max(20, Math.min(80, 50 + (octave - 4) * 6));
-  const s = Math.round(Math.min(100, amplitude * 100));
-  return { h, s, l };
+  return { h, s: 85, l };
 }

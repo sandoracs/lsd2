@@ -19,6 +19,5 @@ export function intervalScheme(
   const cofStep = COF_FROM_INTERVAL[intervalSemitones] ?? 0;
   const h = cofStep * 30; // 12 steps × 30° = full 360°
   const l = Math.max(20, Math.min(80, 50 + (octave - 4) * 6));
-  const s = Math.round(Math.min(100, amplitude * 100));
-  return { h, s, l };
+  return { h, s: 85, l };
 }
