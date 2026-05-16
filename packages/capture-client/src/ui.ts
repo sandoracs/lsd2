@@ -1,12 +1,23 @@
 import { startCapture } from './audio-capture.js';
 import { createWsSender } from './ws-sender.js';
 
+const CAPTURE_KEY = 'lsd2-capture';
+
 export function initUI(): void {
   const serverUrlInput = document.getElementById('server-url') as HTMLInputElement;
   const sessionIdInput = document.getElementById('session-id') as HTMLInputElement;
   const maxOvertonesInput = document.getElementById('max-overtones') as HTMLInputElement;
   const noiseGateInput = document.getElementById('noise-gate') as HTMLInputElement;
   const connectBtn = document.getElementById('connect-btn') as HTMLButtonElement;
+
+  // Restore saved settings
+  try {
+    const saved = JSON.parse(localStorage.getItem(CAPTURE_KEY) ?? '{}') as Record<string, string>;
+    if (saved.serverUrl)    serverUrlInput.value    = saved.serverUrl;
+    if (saved.sessionId)    sessionIdInput.value    = saved.sessionId;
+    if (saved.maxOvertones) maxOvertonesInput.value = saved.maxOvertones;
+    if (saved.noiseGate)    noiseGateInput.value    = saved.noiseGate;
+  } catch { /* ignore */ }
   const statusEl = document.getElementById('status') as HTMLDivElement;
   const noteEl = document.getElementById('current-note') as HTMLDivElement;
   const freqEl = document.getElementById('current-freq') as HTMLDivElement;
@@ -42,6 +53,14 @@ export function initUI(): void {
     const sessionId = sessionIdInput.value.trim() || 'default';
     const maxOvertones = parseInt(maxOvertonesInput.value) || 8;
     const noiseGateDb = parseInt(noiseGateInput.value) || -40;
+
+    try {
+      localStorage.setItem(CAPTURE_KEY, JSON.stringify({
+        serverUrl, sessionId,
+        maxOvertones: maxOvertonesInput.value,
+        noiseGate: noiseGateInput.value,
+      }));
+    } catch { /* ignore */ }
     const wsUrl = `${serverUrl}/ws?sessionId=${encodeURIComponent(sessionId)}&role=capturer`;
 
     try {

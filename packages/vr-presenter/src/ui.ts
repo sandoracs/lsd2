@@ -11,6 +11,8 @@ export interface UiCallbacks {
   onMetaphorChange(metaphor: VrConfig['metaphor']): void;
 }
 
+const VR_KEY = 'lsd2-vr';
+
 export function initUi(callbacks: UiCallbacks): void {
   const form = document.getElementById('config-form') as HTMLFormElement;
   const serverInput = document.getElementById('server-url') as HTMLInputElement;
@@ -20,6 +22,18 @@ export function initUi(callbacks: UiCallbacks): void {
   const decaySlider = document.getElementById('decay-ms') as HTMLInputElement;
   const decayLabel = document.getElementById('decay-label') as HTMLSpanElement;
   const statusEl = document.getElementById('status') as HTMLParagraphElement;
+
+  // Restore saved settings
+  try {
+    const saved = JSON.parse(localStorage.getItem(VR_KEY) ?? '{}') as Record<string, string>;
+    if (saved.serverUrl) serverInput.value      = saved.serverUrl;
+    if (saved.sessionId) sessionInput.value     = saved.sessionId;
+    if (saved.metaphor)  metaphorSelect.value   = saved.metaphor;
+    if (saved.decayMs) {
+      decaySlider.value  = saved.decayMs;
+      decayLabel.textContent = `${saved.decayMs} ms`;
+    }
+  } catch { /* ignore */ }
 
   // Keep the cert-acceptance link in sync with the server URL field
   function updateCertLink() {
@@ -57,6 +71,15 @@ export function initUi(callbacks: UiCallbacks): void {
       metaphor: metaphorSelect.value as VrConfig['metaphor'],
       decayMs: Number(decaySlider.value),
     };
+    try {
+      localStorage.setItem(VR_KEY, JSON.stringify({
+        serverUrl: raw,
+        sessionId: config.sessionId,
+        metaphor:  config.metaphor,
+        decayMs:   String(config.decayMs),
+      }));
+    } catch { /* ignore */ }
+
     callbacks.onConnect(config);
   });
 
