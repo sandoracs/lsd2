@@ -7,6 +7,7 @@ import { OrbitalScene } from './orbital.js';
 import { ConstellationScene } from './constellation.js';
 import { RippleScene } from './ripple.js';
 import { HandTracker } from './hand-tracker.js';
+import { FireScene } from './fire.js';
 import { initUi, setStatus, showVrButton, type VrConfig } from './ui.js';
 
 type Metaphor = VrConfig['metaphor'];
@@ -41,6 +42,7 @@ let aurora: AuroraScene | null = null;
 let orbital: OrbitalScene | null = null;
 let constellation: ConstellationScene | null = null;
 let ripple: RippleScene | null = null;
+let fire: FireScene | null = null;
 let frozen = false;
 let lastFrame: ColorFrame | null = null;
 let lastBeatFrameTs = 0;
@@ -57,6 +59,7 @@ function disposeAll(): void {
   orbital?.dispose(); orbital = null;
   constellation?.dispose(); constellation = null;
   ripple?.dispose(); ripple = null;
+  fire?.dispose(); fire = null;
 }
 
 function spawnMetaphor(metaphor: Metaphor): void {
@@ -70,9 +73,12 @@ function spawnMetaphor(metaphor: Metaphor): void {
   } else if (metaphor === 'constellation') {
     constellation = new ConstellationScene(scene);
     constellation.setDecayMs(decayMs);
-  } else {
+  } else if (metaphor === 'ripple') {
     ripple = new RippleScene(scene);
     ripple.setDecayMs(decayMs);
+  } else {
+    fire = new FireScene(scene);
+    fire.setDecayMs(decayMs);
   }
 }
 
@@ -95,11 +101,13 @@ renderer.setAnimationLoop(() => {
       orbital?.onBeat(intensity);
       constellation?.onBeat(intensity);
       ripple?.onBeat(intensity);
+      fire?.onBeat(intensity);
     }
     aurora?.update(lastFrame);
     orbital?.update(lastFrame, delta);
     constellation?.update(lastFrame);
     ripple?.update(lastFrame);
+    fire?.update(lastFrame);
   }
   renderer.render(scene, camera);
 });
@@ -147,6 +155,7 @@ initUi({
     orbital?.setDecayMs(ms);
     constellation?.setDecayMs(ms);
     ripple?.setDecayMs(ms);
+    fire?.setDecayMs(ms);
   },
 
   onMetaphorChange(metaphor: Metaphor) {

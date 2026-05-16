@@ -1,7 +1,7 @@
 export interface VrConfig {
   serverUrl: string;
   sessionId: string;
-  metaphor: 'aurora' | 'orbital' | 'constellation' | 'ripple';
+  metaphor: 'aurora' | 'orbital' | 'constellation' | 'ripple' | 'fire';
   decayMs: number;
 }
 
