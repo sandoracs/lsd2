@@ -30,6 +30,7 @@ export function applyColorMapping(
       fundamental: { ...frame.fundamental, color: SILENT_COLOR },
       overtones: frame.overtones.map(o => ({ ...o, color: SILENT_COLOR })),
       beat: frame.beat,
+      chord: frame.chord,
     };
   }
   return {
@@ -41,5 +42,6 @@ export function applyColorMapping(
     fundamental: colorNote(frame.fundamental, config, intervalTonicSemitone),
     overtones: frame.overtones.map(o => colorNote(o, config, intervalTonicSemitone)),
     beat: frame.beat,
+    chord: frame.chord,
   };
 }

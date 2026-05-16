@@ -8,6 +8,7 @@ import { ConstellationScene } from './constellation.js';
 import { RippleScene } from './ripple.js';
 import { HandTracker } from './hand-tracker.js';
 import { FireScene } from './fire.js';
+import { ChordDisplay } from './chord-display.js';
 import { initUi, setStatus, showVrButton, type VrConfig } from './ui.js';
 
 type Metaphor = VrConfig['metaphor'];
@@ -43,6 +44,8 @@ let orbital: OrbitalScene | null = null;
 let constellation: ConstellationScene | null = null;
 let ripple: RippleScene | null = null;
 let fire: FireScene | null = null;
+const chordDisplay = new ChordDisplay(scene);
+
 let frozen = false;
 let lastFrame: ColorFrame | null = null;
 let lastBeatFrameTs = 0;
@@ -109,6 +112,7 @@ renderer.setAnimationLoop(() => {
     ripple?.update(lastFrame);
     fire?.update(lastFrame);
   }
+  chordDisplay.update(lastFrame?.chord ?? null);
   renderer.render(scene, camera);
 });
 
@@ -156,6 +160,7 @@ initUi({
     constellation?.setDecayMs(ms);
     ripple?.setDecayMs(ms);
     fire?.setDecayMs(ms);
+    chordDisplay.setDecayMs(ms);
   },
 
   onMetaphorChange(metaphor: Metaphor) {

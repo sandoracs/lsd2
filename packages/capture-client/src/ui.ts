@@ -1,6 +1,5 @@
 import { startCapture } from './audio-capture.js';
 import { createWsSender } from './ws-sender.js';
-import { detectChord } from './chord-detector.js';
 
 const CAPTURE_KEY = 'lsd2-capture';
 
@@ -92,9 +91,7 @@ export function initUI(): void {
           if (!frame.silence && frame.fundamental.note) {
             noteEl.textContent = `${frame.fundamental.note}${frame.fundamental.octave}`;
             freqEl.textContent = `${frame.fundamental.frequency.toFixed(1)} Hz`;
-            const allNoteNames = [frame.fundamental.note, ...frame.overtones.map(o => o.note)];
-            const chord = detectChord(allNoteNames);
-            chordEl.textContent = chord?.label ?? '';
+            chordEl.textContent = frame.chord ?? '';
             overtonesEl.innerHTML = frame.overtones.map(o => `
               <div class="overtone-row">
                 <span class="overtone-note">${o.note}${o.octave}</span>

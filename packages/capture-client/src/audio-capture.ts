@@ -1,6 +1,7 @@
 import type { NoteFrame } from '@lsd2/protocol';
 import { PolyphonicDetector } from './polyphonic-detector.js';
 import { BeatDetector } from './beat-detector.js';
+import { detectChord } from './chord-detector.js';
 
 function computeRMS(buffer: Float32Array): number {
   let sum = 0;
@@ -51,7 +52,7 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
     if (db < noiseGateDb) {
       onFrame({
         type: 'note_frame', timestamp: Date.now(), sessionId,
-        silence: true, beat: false,
+        silence: true, beat: false, chord: null,
         fundamental: { frequency: 0, amplitude: 0, note: '', octave: 0, cents: 0 },
         overtones: [], maxOvertones,
       });
@@ -62,9 +63,12 @@ export async function startCapture(options: CaptureOptions): Promise<() => void>
     const pitches = polyDetect.detect(freqDomain, audioCtx.sampleRate, analyser.fftSize, noiseGateDb, 1 + maxOvertones);
     if (pitches.length === 0) return;
 
+    const noteNames = pitches.map(p => p.note).filter(n => n !== '');
+    const chord = detectChord(noteNames)?.label ?? null;
+
     onFrame({
       type: 'note_frame', timestamp: Date.now(), sessionId,
-      silence: false, beat,
+      silence: false, beat, chord,
       fundamental: pitches[0],
       overtones:   pitches.slice(1),
       maxOvertones,
