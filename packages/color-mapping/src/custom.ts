@@ -3,7 +3,7 @@ import { frequencyToNoteInfo } from './note-utils.js';
 import { chromaticScheme } from './chromatic.js';
 
 // User-defined mapping: note name → HSL color.
-// Amplitude scales saturation; the table defines the full-amplitude color.
+// Octave shifts lightness (same as other schemes); saturation is fixed from the table.
 export function customScheme(
   frequency: number,
   amplitude: number,
@@ -14,9 +14,5 @@ export function customScheme(
   const base = mapping[note];
   if (!base) return chromaticScheme(frequency, amplitude);
   const l = Math.max(20, Math.min(80, base.l + (octave - 4) * 6));
-  return {
-    h: base.h,
-    s: Math.round(Math.min(100, base.s * amplitude)),
-    l,
-  };
+  return { h: base.h, s: base.s, l };
 }
